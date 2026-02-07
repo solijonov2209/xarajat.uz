@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Xarajat.uz</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <% if (user) { %>
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="/" class="nav-logo">Xarajat<span>.uz</span></a>
+      <div class="nav-links">
+        <a href="/" class="nav-link">Bosh sahifa</a>
+        <a href="/add" class="nav-link">+ Qo'shish</a>
+        <a href="/reports" class="nav-link">Hisobotlar</a>
+      </div>
+      <div class="nav-user">
+        <span class="nav-username"><%= user.name %></span>
+        <a href="/logout" class="nav-link logout-btn">Chiqish</a>
+      </div>
+      <button class="nav-toggle" onclick="document.querySelector('.nav-links').classList.toggle('active')">&#9776;</button>
+    </div>
+  </nav>
+  <% } %>
+  <main class="container">

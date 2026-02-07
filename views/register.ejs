@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Xarajat.uz - Ro'yxatdan o'tish</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="auth-page">
+    <div class="auth-card">
+      <div class="auth-logo">Xarajat<span>.uz</span></div>
+      <h2>Ro'yxatdan o'tish</h2>
+
+      <% if (error) { %>
+        <div class="alert alert-error"><%= error %></div>
+      <% } %>
+
+      <form method="POST" action="/register">
+        <div class="form-group">
+          <label>Ismingiz</label>
+          <input type="text" name="name" required placeholder="Ismingiz">
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" name="email" required placeholder="email@example.com">
+        </div>
+        <div class="form-group">
+          <label>Parol</label>
+          <input type="password" name="password" required placeholder="Kamida 6 ta belgi" minlength="6">
+        </div>
+        <div class="form-group">
+          <label>Parolni tasdiqlash</label>
+          <input type="password" name="password2" required placeholder="Parolni qaytaring">
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">Ro'yxatdan o'tish</button>
+      </form>
+
+      <p class="auth-link">Akkauntingiz bormi? <a href="/login">Tizimga kirish</a></p>
+    </div>
+  </div>
+</body>
+</html>

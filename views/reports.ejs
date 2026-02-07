@@ -1,0 +1,175 @@
+<%- include('header') %>
+
+<div class="reports-page">
+  <h1 class="page-title">Hisobotlar</h1>
+
+  <div class="filter-bar">
+    <div class="filter-buttons">
+      <button class="filter-btn active" data-period="monthly">Oylik</button>
+      <button class="filter-btn" data-period="daily">Kunlik</button>
+      <button class="filter-btn" data-period="yearly">Yillik</button>
+      <button class="filter-btn" data-period="custom">Oraliq</button>
+    </div>
+    <div class="filter-dates" id="custom-dates" style="display:none">
+      <input type="date" id="start-date">
+      <span>—</span>
+      <input type="date" id="end-date">
+      <button class="btn btn-primary btn-sm" id="apply-filter">Qo'llash</button>
+    </div>
+  </div>
+
+  <div class="report-summary" id="report-summary">
+    <div class="summary-card summary-income">
+      <span class="summary-label">Jami daromad</span>
+      <span class="summary-value" id="sum-income">0</span>
+    </div>
+    <div class="summary-card summary-expense">
+      <span class="summary-label">Jami xarajat</span>
+      <span class="summary-value" id="sum-expense">0</span>
+    </div>
+    <div class="summary-card summary-balance">
+      <span class="summary-label">Qoldiq</span>
+      <span class="summary-value" id="sum-balance">0</span>
+    </div>
+  </div>
+
+  <div class="charts-grid">
+    <div class="chart-card">
+      <h3>Xarajat kategoriyalari</h3>
+      <canvas id="pie-chart"></canvas>
+    </div>
+    <div class="chart-card">
+      <h3>Daromad vs Xarajat</h3>
+      <canvas id="bar-chart"></canvas>
+    </div>
+    <div class="chart-card">
+      <h3>Naxt vs Plastik</h3>
+      <canvas id="payment-chart"></canvas>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>Tranzaksiyalar ro'yxati</h3>
+    <div class="transactions-list" id="report-transactions">
+      <div class="empty-state"><p>Ma'lumot yuklanmoqda...</p></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+  let pieChart, barChart, paymentChart;
+  let currentPeriod = 'monthly';
+
+  const COLORS = ['#4f46e5','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#06b6d4','#84cc16'];
+
+  document.querySelectorAll('.filter-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      currentPeriod = this.dataset.period;
+      document.getElementById('custom-dates').style.display = currentPeriod === 'custom' ? 'flex' : 'none';
+      if (currentPeriod !== 'custom') loadReport();
+    });
+  });
+
+  document.getElementById('apply-filter').addEventListener('click', loadReport);
+
+  function loadReport() {
+    let url = '/api/reports?period=' + currentPeriod;
+    if (currentPeriod === 'custom') {
+      const s = document.getElementById('start-date').value;
+      const e = document.getElementById('end-date').value;
+      if (!s || !e) return;
+      url += '&start_date=' + s + '&end_date=' + e;
+    }
+
+    fetch(url)
+      .then(r => r.json())
+      .then(renderReport);
+  }
+
+  function formatMoney(n) {
+    return Number(n).toLocaleString('uz-UZ');
+  }
+
+  function renderReport(data) {
+    document.getElementById('sum-income').textContent = '+' + formatMoney(data.summary.total_income) + " so'm";
+    document.getElementById('sum-expense').textContent = '-' + formatMoney(data.summary.total_expense) + " so'm";
+    const bal = data.summary.total_income - data.summary.total_expense;
+    document.getElementById('sum-balance').textContent = formatMoney(bal) + " so'm";
+
+    // Pie chart - expense categories
+    const expCats = data.categoryStats.filter(c => c.type === 'expense');
+    if (pieChart) pieChart.destroy();
+    pieChart = new Chart(document.getElementById('pie-chart'), {
+      type: 'doughnut',
+      data: {
+        labels: expCats.map(c => c.category),
+        datasets: [{
+          data: expCats.map(c => c.total),
+          backgroundColor: COLORS
+        }]
+      },
+      options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+    });
+
+    // Bar chart - monthly
+    if (barChart) barChart.destroy();
+    barChart = new Chart(document.getElementById('bar-chart'), {
+      type: 'bar',
+      data: {
+        labels: data.monthlyStats.map(m => m.month),
+        datasets: [
+          { label: 'Daromad', data: data.monthlyStats.map(m => m.income), backgroundColor: '#10b981' },
+          { label: 'Xarajat', data: data.monthlyStats.map(m => m.expense), backgroundColor: '#ef4444' }
+        ]
+      },
+      options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+    });
+
+    // Payment chart
+    if (paymentChart) paymentChart.destroy();
+    paymentChart = new Chart(document.getElementById('payment-chart'), {
+      type: 'bar',
+      data: {
+        labels: data.paymentStats.map(p => p.payment_type === 'cash' ? 'Naqd' : 'Plastik'),
+        datasets: [
+          { label: 'Daromad', data: data.paymentStats.map(p => p.income), backgroundColor: '#10b981' },
+          { label: 'Xarajat', data: data.paymentStats.map(p => p.expense), backgroundColor: '#ef4444' }
+        ]
+      },
+      options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+    });
+
+    // Transactions list
+    const container = document.getElementById('report-transactions');
+    if (data.transactions.length === 0) {
+      container.innerHTML = '<div class="empty-state"><p>Bu davr uchun tranzaksiya topilmadi</p></div>';
+      return;
+    }
+    container.innerHTML = data.transactions.map(function(tx) {
+      return '<div class="transaction-item">' +
+        '<div class="tx-left">' +
+          '<div class="tx-icon ' + tx.type + '">' + (tx.type === 'income' ? '&#8593;' : '&#8595;') + '</div>' +
+          '<div class="tx-details">' +
+            '<span class="tx-category">' + tx.category + '</span>' +
+            '<span class="tx-meta">' + tx.date + ' &middot; ' +
+              '<span class="tx-payment ' + tx.payment_type + '">' + (tx.payment_type === 'cash' ? 'Naqd' : 'Plastik') + '</span>' +
+              (tx.description ? ' &middot; ' + tx.description : '') +
+            '</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="tx-right">' +
+          '<span class="tx-amount ' + tx.type + '">' +
+            (tx.type === 'income' ? '+' : '-') + formatMoney(tx.amount) +
+          '</span>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  loadReport();
+</script>
+
+<%- include('footer') %>

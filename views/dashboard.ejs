@@ -1,0 +1,104 @@
+<%- include('header') %>
+
+<div class="dashboard">
+  <h1 class="page-title">Bosh sahifa</h1>
+
+  <div class="balance-cards">
+    <div class="balance-card card-cash">
+      <div class="balance-icon">&#128181;</div>
+      <div class="balance-info">
+        <span class="balance-label">Naqd pul</span>
+        <span class="balance-amount <%= (totals.cash_income - totals.cash_expense) >= 0 ? 'positive' : 'negative' %>">
+          <%= (totals.cash_income - totals.cash_expense).toLocaleString('uz-UZ') %> so'm
+        </span>
+      </div>
+    </div>
+
+    <div class="balance-card card-plastic">
+      <div class="balance-icon">&#128179;</div>
+      <div class="balance-info">
+        <span class="balance-label">Plastik karta</span>
+        <span class="balance-amount <%= (totals.card_income - totals.card_expense) >= 0 ? 'positive' : 'negative' %>">
+          <%= (totals.card_income - totals.card_expense).toLocaleString('uz-UZ') %> so'm
+        </span>
+      </div>
+    </div>
+
+    <div class="balance-card card-total">
+      <div class="balance-icon">&#128176;</div>
+      <div class="balance-info">
+        <span class="balance-label">Umumiy balans</span>
+        <span class="balance-amount <%= (totals.total_income - totals.total_expense) >= 0 ? 'positive' : 'negative' %>">
+          <%= (totals.total_income - totals.total_expense).toLocaleString('uz-UZ') %> so'm
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="month-stats">
+    <h3>Joriy oy</h3>
+    <div class="stats-row">
+      <div class="stat-item stat-income">
+        <span class="stat-label">Daromad</span>
+        <span class="stat-value">+<%= monthTotals.month_income.toLocaleString('uz-UZ') %></span>
+      </div>
+      <div class="stat-item stat-expense">
+        <span class="stat-label">Xarajat</span>
+        <span class="stat-value">-<%= monthTotals.month_expense.toLocaleString('uz-UZ') %></span>
+      </div>
+      <div class="stat-item stat-balance">
+        <span class="stat-label">Qoldiq</span>
+        <span class="stat-value"><%= (monthTotals.month_income - monthTotals.month_expense).toLocaleString('uz-UZ') %></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <h3>Oxirgi tranzaksiyalar</h3>
+      <a href="/add" class="btn btn-primary btn-sm">+ Qo'shish</a>
+    </div>
+
+    <% if (recent.length === 0) { %>
+      <div class="empty-state">
+        <p>Hali tranzaksiya yo'q</p>
+        <a href="/add" class="btn btn-primary">Birinchi tranzaksiyani qo'shing</a>
+      </div>
+    <% } else { %>
+      <div class="transactions-list">
+        <% recent.forEach(function(tx) { %>
+          <div class="transaction-item">
+            <div class="tx-left">
+              <div class="tx-icon <%= tx.type %>">
+                <%= tx.type === 'income' ? '&#8593;' : '&#8595;' %>
+              </div>
+              <div class="tx-details">
+                <span class="tx-category"><%= tx.category %></span>
+                <span class="tx-meta">
+                  <%= tx.date %> &middot;
+                  <span class="tx-payment <%= tx.payment_type %>">
+                    <%= tx.payment_type === 'cash' ? 'Naqd' : 'Plastik' %>
+                  </span>
+                  <% if (tx.description) { %> &middot; <%= tx.description %><% } %>
+                </span>
+              </div>
+            </div>
+            <div class="tx-right">
+              <span class="tx-amount <%= tx.type %>">
+                <%= tx.type === 'income' ? '+' : '-' %><%= tx.amount.toLocaleString('uz-UZ') %>
+              </span>
+              <div class="tx-actions">
+                <a href="/edit/<%= tx.id %>" class="btn-icon" title="Tahrirlash">&#9998;</a>
+                <form method="POST" action="/delete/<%= tx.id %>" style="display:inline" onsubmit="return confirm('O\'chirishni tasdiqlaysizmi?')">
+                  <button type="submit" class="btn-icon delete" title="O'chirish">&#10005;</button>
+                </form>
+              </div>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<%- include('footer') %>

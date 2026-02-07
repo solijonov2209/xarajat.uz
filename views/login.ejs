@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Xarajat.uz - Kirish</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="auth-page">
+    <div class="auth-card">
+      <div class="auth-logo">Xarajat<span>.uz</span></div>
+      <h2>Tizimga kirish</h2>
+
+      <% if (error) { %>
+        <div class="alert alert-error"><%= error %></div>
+      <% } %>
+
+      <form method="POST" action="/login">
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" name="email" required placeholder="email@example.com">
+        </div>
+        <div class="form-group">
+          <label>Parol</label>
+          <input type="password" name="password" required placeholder="Parolingiz">
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">Kirish</button>
+      </form>
+
+      <p class="auth-link">Akkauntingiz yo'qmi? <a href="/register">Ro'yxatdan o'tish</a></p>
+    </div>
+  </div>
+</body>
+</html>
