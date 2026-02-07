@@ -9,7 +9,7 @@ services:
         value: production
       - key: SESSION_SECRET
         generateValue: true
-    disk:
-      name: xarajat-data
-      mountPath: /opt/render/project/src/data
-      sizeGB: 1
+      - key: TURSO_DATABASE_URL
+        sync: false
+      - key: TURSO_AUTH_TOKEN
+        sync: false

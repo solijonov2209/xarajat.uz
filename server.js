@@ -4,13 +4,15 @@ const session = require('express-session');
 const path = require('path');
 const fs = require('fs');
 
-// data papkasini yaratish (agar yo'q bo'lsa)
-const dataDir = path.join(__dirname, 'data');
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
+// data papkasini yaratish (lokal rejim uchun)
+if (!process.env.TURSO_DATABASE_URL) {
+  const dataDir = path.join(__dirname, 'data');
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+  }
 }
 
-const db = require('./database');
+const { getDb, initDb } = require('./database');
 
 const authRoutes = require('./routes/auth');
 const transactionRoutes = require('./routes/transactions');
@@ -42,11 +44,12 @@ app.use(session({
   }
 }));
 
-app.use((req, res, next) => {
+app.use(async (req, res, next) => {
   res.locals.user = null;
   if (req.session.userId) {
-    const user = db.prepare('SELECT id, name, email FROM users WHERE id = ?').get(req.session.userId);
-    res.locals.user = user;
+    const db = getDb();
+    const result = await db.execute({ sql: 'SELECT id, name, email FROM users WHERE id = ?', args: [req.session.userId] });
+    res.locals.user = result.rows[0] || null;
   }
   next();
 });
@@ -66,6 +69,12 @@ app.use((err, req, res, next) => {
   res.status(500).send('Serverda xatolik yuz berdi');
 });
 
-app.listen(PORT, () => {
-  console.log(`Server ishga tushdi: http://localhost:${PORT}`);
+// Bazani yaratib, serverni ishga tushirish
+initDb().then(() => {
+  app.listen(PORT, () => {
+    console.log(`Server ishga tushdi: http://localhost:${PORT}`);
+  });
+}).catch((err) => {
+  console.error('Baza yaratishda xatolik:', err);
+  process.exit(1);
 });
