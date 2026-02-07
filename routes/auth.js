@@ -1,6 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
-const db = require('../database');
+const { getDb } = require('../database');
 const { guestOnly } = require('../middleware/auth');
 
 const router = express.Router();
@@ -9,10 +9,13 @@ router.get('/login', guestOnly, (req, res) => {
   res.render('login', { error: null });
 });
 
-router.post('/login', guestOnly, (req, res) => {
+router.post('/login', guestOnly, async (req, res) => {
+  const db = getDb();
   const { email, password } = req.body;
 
-  const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+  const result = await db.execute({ sql: 'SELECT * FROM users WHERE email = ?', args: [email] });
+  const user = result.rows[0];
+
   if (!user) {
     return res.render('login', { error: 'Email yoki parol noto\'g\'ri' });
   }
@@ -22,7 +25,7 @@ router.post('/login', guestOnly, (req, res) => {
     return res.render('login', { error: 'Email yoki parol noto\'g\'ri' });
   }
 
-  req.session.userId = user.id;
+  req.session.userId = Number(user.id);
   res.redirect('/');
 });
 
@@ -30,7 +33,8 @@ router.get('/register', guestOnly, (req, res) => {
   res.render('register', { error: null });
 });
 
-router.post('/register', guestOnly, (req, res) => {
+router.post('/register', guestOnly, async (req, res) => {
+  const db = getDb();
   const { name, email, password, password2 } = req.body;
 
   if (!name || !email || !password) {
@@ -45,15 +49,18 @@ router.post('/register', guestOnly, (req, res) => {
     return res.render('register', { error: 'Parollar mos kelmaydi' });
   }
 
-  const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
-  if (existing) {
+  const existing = await db.execute({ sql: 'SELECT id FROM users WHERE email = ?', args: [email] });
+  if (existing.rows[0]) {
     return res.render('register', { error: 'Bu email allaqachon ro\'yxatdan o\'tgan' });
   }
 
   const hash = bcrypt.hashSync(password, 10);
-  const result = db.prepare('INSERT INTO users (name, email, password) VALUES (?, ?, ?)').run(name, email, hash);
+  const result = await db.execute({
+    sql: 'INSERT INTO users (name, email, password) VALUES (?, ?, ?)',
+    args: [name, email, hash]
+  });
 
-  req.session.userId = result.lastInsertRowid;
+  req.session.userId = Number(result.lastInsertRowid);
   res.redirect('/');
 });
 

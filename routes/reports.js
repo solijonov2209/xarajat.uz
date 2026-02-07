@@ -1,5 +1,5 @@
 const express = require('express');
-const db = require('../database');
+const { getDb } = require('../database');
 const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
@@ -8,7 +8,8 @@ router.get('/reports', requireAuth, (req, res) => {
   res.render('reports');
 });
 
-router.get('/api/reports', requireAuth, (req, res) => {
+router.get('/api/reports', requireAuth, async (req, res) => {
+  const db = getDb();
   const userId = req.session.userId;
   const { period, start_date, end_date } = req.query;
 
@@ -26,38 +27,41 @@ router.get('/api/reports', requireAuth, (req, res) => {
     dateFilter = "AND strftime('%Y', date) = strftime('%Y', 'now')";
   }
 
-  const transactions = db.prepare(`
-    SELECT * FROM transactions WHERE user_id = ? ${dateFilter} ORDER BY date DESC, id DESC
-  `).all(...params);
+  const transactions = (await db.execute({
+    sql: `SELECT * FROM transactions WHERE user_id = ? ${dateFilter} ORDER BY date DESC, id DESC`,
+    args: params
+  })).rows;
 
-  const categoryStats = db.prepare(`
-    SELECT category, type, SUM(amount) as total
-    FROM transactions WHERE user_id = ? ${dateFilter}
-    GROUP BY category, type
-  `).all(...params);
+  const categoryStats = (await db.execute({
+    sql: `SELECT category, type, SUM(amount) as total FROM transactions WHERE user_id = ? ${dateFilter} GROUP BY category, type`,
+    args: params
+  })).rows;
 
-  const monthlyStats = db.prepare(`
-    SELECT strftime('%Y-%m', date) as month,
+  const monthlyStats = (await db.execute({
+    sql: `SELECT strftime('%Y-%m', date) as month,
       SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income,
       SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expense
     FROM transactions WHERE user_id = ? ${dateFilter}
-    GROUP BY month ORDER BY month
-  `).all(...params);
+    GROUP BY month ORDER BY month`,
+    args: params
+  })).rows;
 
-  const paymentStats = db.prepare(`
-    SELECT payment_type,
+  const paymentStats = (await db.execute({
+    sql: `SELECT payment_type,
       SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income,
       SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expense
     FROM transactions WHERE user_id = ? ${dateFilter}
-    GROUP BY payment_type
-  `).all(...params);
+    GROUP BY payment_type`,
+    args: params
+  })).rows;
 
-  const summary = db.prepare(`
-    SELECT
+  const summary = (await db.execute({
+    sql: `SELECT
       COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) as total_income,
       COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) as total_expense
-    FROM transactions WHERE user_id = ? ${dateFilter}
-  `).get(...params);
+    FROM transactions WHERE user_id = ? ${dateFilter}`,
+    args: params
+  })).rows[0];
 
   res.json({ transactions, categoryStats, monthlyStats, paymentStats, summary });
 });

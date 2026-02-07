@@ -1,35 +1,53 @@
-const Database = require('better-sqlite3');
+const { createClient } = require('@libsql/client');
 const path = require('path');
 
-const dbPath = path.join(__dirname, 'data', 'xarajat.db');
-const db = new Database(dbPath);
+let db;
 
-db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
+function getDb() {
+  if (!db) {
+    if (process.env.TURSO_DATABASE_URL) {
+      db = createClient({
+        url: process.env.TURSO_DATABASE_URL,
+        authToken: process.env.TURSO_AUTH_TOKEN,
+      });
+    } else {
+      db = createClient({
+        url: `file:${path.join(__dirname, 'data', 'xarajat.db')}`,
+      });
+    }
+  }
+  return db;
+}
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  )
-`);
+async function initDb() {
+  const client = getDb();
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS transactions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    type TEXT NOT NULL CHECK(type IN ('income', 'expense')),
-    amount REAL NOT NULL CHECK(amount > 0),
-    category TEXT NOT NULL,
-    payment_type TEXT NOT NULL CHECK(payment_type IN ('cash', 'card')),
-    description TEXT,
-    date DATE NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id)
-  )
-`);
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      email TEXT UNIQUE NOT NULL,
+      password TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
 
-module.exports = db;
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS transactions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      type TEXT NOT NULL CHECK(type IN ('income', 'expense')),
+      amount REAL NOT NULL CHECK(amount > 0),
+      category TEXT NOT NULL,
+      payment_type TEXT NOT NULL CHECK(payment_type IN ('cash', 'card')),
+      description TEXT,
+      date DATE NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+  `);
+
+  return client;
+}
+
+module.exports = { getDb, initDb };
