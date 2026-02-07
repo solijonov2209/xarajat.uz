@@ -1,7 +1,7 @@
 {
   "name": "xarajat.uz",
   "version": "1.0.0",
-  "description": "",
+  "description": "Shaxsiy moliyaviy boshqaruv va xarajatlarni kuzatish ilovasi",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -11,9 +11,13 @@
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.6.2",
+    "dotenv": "^17.2.4",
     "ejs": "^4.0.1",
     "express": "^5.2.1",
     "express-session": "^1.19.0"
