@@ -340,6 +340,12 @@ body {
   border: 1px solid #fecaca;
 }
 
+.alert-success {
+  background: var(--success-bg);
+  color: var(--success);
+  border: 1px solid #a7f3d0;
+}
+
 /* ========== PAGE TITLE ========== */
 .page-title {
   font-size: 1.5rem;
