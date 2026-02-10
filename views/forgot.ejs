@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Xarajat.uz - Parolni tiklash</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="auth-page">
+    <div class="auth-card">
+      <div class="auth-logo">Xarajat<span>.uz</span></div>
+      <h2>Parolni tiklash</h2>
+
+      <% if (error) { %>
+        <div class="alert alert-error"><%= error %></div>
+      <% } %>
+
+      <% if (success) { %>
+        <div class="alert alert-success"><%= success %></div>
+      <% } else { %>
+        <p style="text-align: center; color: var(--text-light); font-size: 0.9rem; margin-bottom: 20px;">
+          Email manzilingizni kiriting. Tiklash havolasini ko'rsatamiz.
+        </p>
+        <form method="POST" action="/forgot">
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" name="email" required placeholder="email@example.com">
+          </div>
+          <button type="submit" class="btn btn-primary btn-full">Tiklash havolasini olish</button>
+        </form>
+      <% } %>
+
+      <p class="auth-link"><a href="/login">Tizimga kirish</a></p>
+    </div>
+  </div>
+</body>
+</html>
