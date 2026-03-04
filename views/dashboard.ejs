@@ -70,7 +70,7 @@
           <div class="transaction-item">
             <div class="tx-left">
               <div class="tx-icon <%= tx.type %>">
-                <%= tx.type === 'income' ? '&#8593;' : '&#8595;' %>
+                <%- tx.type === 'income' ? '&uarr;' : '&darr;' %>
               </div>
               <div class="tx-details">
                 <span class="tx-category"><%= tx.category %></span>
